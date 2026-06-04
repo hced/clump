@@ -198,34 +198,49 @@ push-release-tag:
         echo "Cancelled."; \
     fi
 
-# Master release recipe: bump version, commit, tag, and push
+# Master release recipe: verify git state, bump version, commit, tag, and push safely
 release: _ensure-cargo-bump
-    @echo "🚀 Starting release process..."; \
+    @echo "🔍 Running pre-flight git checks..."; \
+    git fetch origin main -q; \
+    LOCAL_STATUS=$(git status -uno); \
+    if echo "$LOCAL_STATUS" | grep -q "Your branch is behind"; then \
+        echo "❌ Aborting: Your local branch is behind 'origin/main'. Please run 'git pull' first."; \
+        exit 1; \
+    fi; \
+    if ! git diff-index --quiet HEAD --; then \
+        echo "❌ Aborting: You have unstaged changes in your working directory. Clean or commit them first."; \
+        exit 1; \
+    fi; \
+    echo "✅ Pre-flight checks passed."; \
+    echo ""; \
+    echo "🚀 Starting release process..."; \
     echo ""; \
     CURRENT_VER=$(grep -m1 "^version = " Cargo.toml | cut -d"\"" -f2); \
+    PATCH_PREVIEW=$(echo $CURRENT_VER | awk -F. '{print $1"."$2"."$3+1}'); \
+    MINOR_PREVIEW=$(echo $CURRENT_VER | awk -F. '{print $1"."$2+1".0"}'); \
+    MAJOR_PREVIEW=$(echo $CURRENT_VER | awk -F. '{print $1+1".0.0"}'); \
     echo "Current version: $CURRENT_VER"; \
     echo ""; \
     echo "Select bump type:"; \
-    echo "  1) Patch (1.0.0 -> 1.0.1)"; \
-    echo "  2) Minor (1.0.0 -> 1.1.0)"; \
-    echo "  3) Major (1.0.0 -> 2.0.0)"; \
+    echo "  1) Patch ($CURRENT_VER -> $PATCH_PREVIEW)"; \
+    echo "  2) Minor ($CURRENT_VER -> $MINOR_PREVIEW)"; \
+    echo "  3) Major ($CURRENT_VER -> $MAJOR_PREVIEW)"; \
     echo "  4) Custom (enter manually)"; \
     echo "  5) No bump (use current version)"; \
     echo "  q) Cancel"; \
     echo ""; \
     read -p "Choice: " choice; \
     case $choice in \
-        1) cargo bump patch ;; \
-        2) cargo bump minor ;; \
-        3) cargo bump major ;; \
-        4) read -p "Enter new version: " version; \
-           sed -i "s/^version = \".*\"/version = \"$version\"/" Cargo.toml; \
-           echo "✅ Version updated to $version" ;; \
-        5) echo "✅ Keeping current version ($CURRENT_VER)" ;; \
+        1) NEW_VERSION="$PATCH_PREVIEW" ;; \
+        2) NEW_VERSION="$MINOR_PREVIEW" ;; \
+        3) NEW_VERSION="$MAJOR_PREVIEW" ;; \
+        4) read -p "Enter new version: " custom_v; \
+           if [ -z "$custom_v" ]; then echo "Cancelled."; exit 0; fi; \
+           NEW_VERSION="$custom_v" ;; \
+        5) NEW_VERSION="$CURRENT_VER" ;; \
         q) echo "Cancelled."; exit 0 ;; \
         *) echo "Invalid choice. Cancelled."; exit 1 ;; \
     esac; \
-    NEW_VERSION=$(grep -m1 "^version = " Cargo.toml | cut -d"\"" -f2); \
     DEFAULT_TAG="v$NEW_VERSION"; \
     echo ""; \
     echo "Recent tags:"; \
@@ -240,26 +255,40 @@ release: _ensure-cargo-bump
         TAG="$custom_tag"; \
     fi; \
     echo ""; \
-    echo "✅ Target release configuration set (tag: $TAG)"; \
+    echo "Summary of planned actions:"; \
+    echo "  - Update Cargo.toml version: $CURRENT_VER -> $NEW_VERSION"; \
+    echo "  - Create Git tag:            $TAG"; \
     echo ""; \
-    read -p "Add all changes and commit? (y/N): " commit_confirm; \
-    if [ "$commit_confirm" != "y" ] && [ "$commit_confirm" != "Y" ]; then \
-        echo "Cancelled."; \
+    read -p "Apply changes and open commit editor? (y/N): " final_confirm; \
+    if [ "$final_confirm" != "y" ] && [ "$final_confirm" != "Y" ]; then \
+        echo "Cancelled. No files were altered."; \
         exit 0; \
     fi; \
-    git add .; \
+    if [ "$NEW_VERSION" != "$CURRENT_VER" ]; then \
+        sed -i "s/^version = \".*\"/version = \"$NEW_VERSION\"/" Cargo.toml; \
+        echo "✅ Cargo.toml updated to $NEW_VERSION"; \
+    fi; \
+    git add Cargo.toml; \
     echo "Opening editor for commit message..."; \
-    if ! git commit --allow-empty; then \
-        echo "❌ Commit cancelled. Release aborted."; \
+    if ! git commit; then \
+        echo "❌ Commit cancelled. Reverting Cargo.toml..."; \
+        git checkout -- Cargo.toml; \
         exit 1; \
     fi; \
     echo ""; \
     read -p "Push commits and create tag $TAG? (y/N): " tag_confirm; \
     if [ "$tag_confirm" = "y" ] || [ "$tag_confirm" = "Y" ]; then \
-        git push origin main && git tag "$TAG" && git push origin "$TAG"; \
+        echo "Pushing changes to main..."; \
+        if ! git push origin main; then \
+            echo "❌ Error: Failed to push to origin/main. Aborting tag creation."; \
+            echo "💡 Your commit is safe locally. Pull the remote changes, resolve conflicts, and push manually."; \
+            exit 1; \
+    fi; \
+        echo "Creating tag $TAG..."; \
+        git tag "$TAG" && git push origin "$TAG"; \
         echo ""; \
         echo "✅ Commits pushed and tag $TAG created!"; \
         echo "🚀 Release complete!"; \
     else \
-        echo "Commit made locally, but not pushed."; \
+        echo "Commit made locally, but tag creation and push skipped."; \
     fi

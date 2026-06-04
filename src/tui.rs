@@ -161,17 +161,17 @@ impl TuiApp {
 
 PURPOSE:
 Clump was designed to streamline the process of combining entire codebases
-or project directories into a single, flat document. This is incredibly
-useful for:
-• Sharing project context with AI assistants for collaborative coding
+or project directories into a single, flat stream of text. This is useful
+for:
+• Sharing project context with LLMs for collaborative coding
 • Providing reviewers with a complete snapshot of your codebase
 • Archiving project states as readable text files
-• Quick reference when jumping between complex repositories
+• Quick reference, and potentially other usecases as well.
 
 HOW IT WORKS:
-Clump intelligently traverses your directory, filters out binary files
-and noise (like node_modules or .git), and stitches together all text
-files into one clean output.
+Clump traverses your directory, filters out binary files and noise (like
+node_modules or .git), and stitches together all text files into one clean
+output.
 
 USAGE MODES:
 1. CLI Mode:

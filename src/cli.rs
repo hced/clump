@@ -35,6 +35,7 @@ enum RecipeAction {
     name = "clump",
     version,
     propagate_version = true,
+    about = "\n\nclump - combine text files into a single output for LLMs, code reviews, or archival.",
     after_help = HELP_TEXT,
 )]
 pub struct Cli {
