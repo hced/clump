@@ -2,6 +2,7 @@ name: Cross-Platform CI/CD
 
 on:
   push:
+    # Trigger builds on main, but notice we separate the logic
     branches: [ "main" ]
     tags:
       - 'v*'
@@ -39,6 +40,7 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
+    # ONLY execute the release job if the workflow run itself was triggered by a tag
     if: startsWith(github.ref, 'refs/tags/')
 
     steps:
@@ -47,36 +49,37 @@ jobs:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
       with:
-        path: artifacts
+        # Download everything into a root workspace directory
+        path: ${{ github.workspace }}/downloaded-artifacts
 
     - name: Package artifacts for release
       run: |
-        cd artifacts
-        mkdir release-files
+        mkdir -p ${{ github.workspace }}/release-files
+        cd ${{ github.workspace }}/downloaded-artifacts
         
         # Package Linux binary
         if [ -d "clump-ubuntu-latest" ]; then
-          tar -czf release-files/clump-linux.tar.gz -C clump-ubuntu-latest clump
+          tar -czf ${{ github.workspace }}/release-files/clump-linux.tar.gz -C clump-ubuntu-latest clump
         fi
         
         # Package macOS binary
         if [ -d "clump-macos-latest" ]; then
-          tar -czf release-files/clump-macos.tar.gz -C clump-macos-latest clump
+          tar -czf ${{ github.workspace }}/release-files/clump-macos.tar.gz -C clump-macos-latest clump
         fi
         
         # Package Windows binary
         if [ -d "clump-windows-latest" ]; then
-          zip -j release-files/clump-windows.zip clump-windows-latest/clump.exe
+          zip -j ${{ github.workspace }}/release-files/clump-windows.zip clump-windows-latest/clump.exe
         fi
         
         # Generate checksums
-        cd release-files
+        cd ${{ github.workspace }}/release-files
         sha256sum * > checksums.txt
 
     - name: Create Release and upload assets
       uses: softprops/action-gh-release@v2
       with:
-        files: artifacts/release-files/*
+        files: ${{ github.workspace }}/release-files/*
         generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
