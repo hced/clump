@@ -215,24 +215,30 @@ release: _ensure-cargo-bump
     echo ""; \
     read -p "Choice: " choice; \
     case $choice in \
-        1) cargo bump patch; NEW_VERSION=$(grep -m1 "^version = " Cargo.toml | cut -d"\"" -f2); TAG="v$NEW_VERSION" ;; \
-        2) cargo bump minor; NEW_VERSION=$(grep -m1 "^version = " Cargo.toml | cut -d"\"" -f2); TAG="v$NEW_VERSION" ;; \
-        3) cargo bump major; NEW_VERSION=$(grep -m1 "^version = " Cargo.toml | cut -d"\"" -f2); TAG="v$NEW_VERSION" ;; \
+        1) cargo bump patch ;; \
+        2) cargo bump minor ;; \
+        3) cargo bump major ;; \
         4) read -p "Enter new version: " version; \
            sed -i "s/^version = \".*\"/version = \"$version\"/" Cargo.toml; \
-           echo "✅ Version updated to $version"; \
-           TAG="v$version" ;; \
-        5) echo "✅ Keeping current version ($CURRENT_VER)"; \
-           echo ""; \
-           echo "Recent tags:"; \
-           git tag --sort=-v:refname | head -5 || echo "  (none)"; \
-           echo ""; \
-           read -p "Tag name (e.g., v$CURRENT_VER): " custom_tag; \
-           if [ -z "$custom_tag" ]; then echo "Cancelled."; exit 0; fi; \
-           TAG="$custom_tag" ;; \
+           echo "✅ Version updated to $version" ;; \
+        5) echo "✅ Keeping current version ($CURRENT_VER)" ;; \
         q) echo "Cancelled."; exit 0 ;; \
         *) echo "Invalid choice. Cancelled."; exit 1 ;; \
     esac; \
+    NEW_VERSION=$(grep -m1 "^version = " Cargo.toml | cut -d"\"" -f2); \
+    DEFAULT_TAG="v$NEW_VERSION"; \
+    echo ""; \
+    echo "Recent tags:"; \
+    git tag --sort=-v:refname | head -5 || echo "  (none)"; \
+    echo ""; \
+    read -p "Use default tag name '$DEFAULT_TAG'? (y/N): " tag_choice; \
+    if [ "$tag_choice" = "y" ] || [ "$tag_choice" = "Y" ] || [ -z "$tag_choice" ]; then \
+        TAG="$DEFAULT_TAG"; \
+    else \
+        read -p "Enter custom tag name: " custom_tag; \
+        if [ -z "$custom_tag" ]; then echo "Cancelled."; exit 0; fi; \
+        TAG="$custom_tag"; \
+    fi; \
     echo ""; \
     echo "✅ Target release configuration set (tag: $TAG)"; \
     echo ""; \
