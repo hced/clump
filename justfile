@@ -186,7 +186,7 @@ push-release-tag:
     @echo "Existing tags:"
     @git tag --sort=-v:refname | head -5 || echo "  (none)"
     @echo ""
-    @echo "Current version in Cargo.toml: v$(grep -m1 '^version = ' Cargo.toml | cut -d'"' -f2)"
+    @echo "Current version in Cargo.toml: v\$(grep -m1 '^version = ' Cargo.toml | cut -d'\"' -f2)"
     @echo ""
     @read -p "Tag name (e.g., v1.0.0): " tag; \
     if [ -z "$tag" ]; then echo "Cancelled."; exit 0; fi
@@ -200,52 +200,60 @@ push-release-tag:
 
 # Master release recipe: bump version, commit, tag, and push
 release: _ensure-cargo-bump
-    @echo "🚀 Starting release process..."
-    @echo ""
-    @CURRENT_VER=$(grep -m1 "^version = " Cargo.toml | cut -d"\"" -f2)
-    @echo "Current version: $CURRENT_VER"
-    @echo ""
-    @echo "Select bump type:"
-    @echo "  1) Patch (1.0.0 -> 1.0.1)"
-    @echo "  2) Minor (1.0.0 -> 1.1.0)"
-    @echo "  3) Major (1.0.0 -> 2.0.0)"
-    @echo "  4) Custom (enter manually)"
-    @echo "  q) Cancel"
-    @echo ""
-    @read -p "Choice: " choice; \
+    @echo "🚀 Starting release process..."; \
+    echo ""; \
+    CURRENT_VER=$(grep -m1 "^version = " Cargo.toml | cut -d"\"" -f2); \
+    echo "Current version: $CURRENT_VER"; \
+    echo ""; \
+    echo "Select bump type:"; \
+    echo "  1) Patch (1.0.0 -> 1.0.1)"; \
+    echo "  2) Minor (1.0.0 -> 1.1.0)"; \
+    echo "  3) Major (1.0.0 -> 2.0.0)"; \
+    echo "  4) Custom (enter manually)"; \
+    echo "  5) No bump (use current version)"; \
+    echo "  q) Cancel"; \
+    echo ""; \
+    read -p "Choice: " choice; \
     case $choice in \
-        1) cargo bump patch ;; \
-        2) cargo bump minor ;; \
-        3) cargo bump major ;; \
+        1) cargo bump patch; NEW_VERSION=$(grep -m1 "^version = " Cargo.toml | cut -d"\"" -f2); TAG="v$NEW_VERSION" ;; \
+        2) cargo bump minor; NEW_VERSION=$(grep -m1 "^version = " Cargo.toml | cut -d"\"" -f2); TAG="v$NEW_VERSION" ;; \
+        3) cargo bump major; NEW_VERSION=$(grep -m1 "^version = " Cargo.toml | cut -d"\"" -f2); TAG="v$NEW_VERSION" ;; \
         4) read -p "Enter new version: " version; \
            sed -i "s/^version = \".*\"/version = \"$version\"/" Cargo.toml; \
-           echo "✅ Version updated to $version" ;; \
+           echo "✅ Version updated to $version"; \
+           TAG="v$version" ;; \
+        5) echo "✅ Keeping current version ($CURRENT_VER)"; \
+           echo ""; \
+           echo "Recent tags:"; \
+           git tag --sort=-v:refname | head -5 || echo "  (none)"; \
+           echo ""; \
+           read -p "Tag name (e.g., v$CURRENT_VER): " custom_tag; \
+           if [ -z "$custom_tag" ]; then echo "Cancelled."; exit 0; fi; \
+           TAG="$custom_tag" ;; \
         q) echo "Cancelled."; exit 0 ;; \
         *) echo "Invalid choice. Cancelled."; exit 1 ;; \
-    esac
-    @NEW_VERSION=$(grep -m1 "^version = " Cargo.toml | cut -d"\"" -f2)
-    @TAG="v$NEW_VERSION"
-    @echo ""
-    @echo "✅ Version bumped to $NEW_VERSION (tag: $TAG)"
-    @echo ""
-    @read -p "Add all changes and commit? (y/N): " commit_confirm; \
+    esac; \
+    echo ""; \
+    echo "✅ Target release configuration set (tag: $TAG)"; \
+    echo ""; \
+    read -p "Add all changes and commit? (y/N): " commit_confirm; \
     if [ "$commit_confirm" != "y" ] && [ "$commit_confirm" != "Y" ]; then \
         echo "Cancelled."; \
         exit 0; \
-    fi
-    @git add .
-    @echo "Opening editor for commit message..."
-    @if ! git commit; then \
+    fi; \
+    git add .; \
+    echo "Opening editor for commit message..."; \
+    if ! git commit --allow-empty; then \
         echo "❌ Commit cancelled. Release aborted."; \
         exit 1; \
-    fi
-    @echo ""
-    @read -p "Create and push tag $TAG? (y/N): " tag_confirm; \
+    fi; \
+    echo ""; \
+    read -p "Push commits and create tag $TAG? (y/N): " tag_confirm; \
     if [ "$tag_confirm" = "y" ] || [ "$tag_confirm" = "Y" ]; then \
-        git tag "$TAG" && git push origin "$TAG"; \
+        git push origin main && git tag "$TAG" && git push origin "$TAG"; \
         echo ""; \
-        echo "✅ Tag $TAG pushed!"; \
+        echo "✅ Commits pushed and tag $TAG created!"; \
         echo "🚀 Release complete!"; \
     else \
-        echo "Commit made but tag not pushed."; \
+        echo "Commit made locally, but not pushed."; \
     fi
