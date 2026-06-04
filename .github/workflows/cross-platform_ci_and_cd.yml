@@ -2,7 +2,6 @@ name: Cross-Platform CI/CD
 
 on:
   push:
-    # Trigger builds on main, but notice we separate the logic
     branches: [ "main" ]
     tags:
       - 'v*'
@@ -28,6 +27,7 @@ jobs:
     - name: Run tests
       run: cargo test --release --verbose
 
+    # Explicitly naming artifacts distinctly per-OS
     - name: Upload binary artifact
       uses: actions/upload-artifact@v4
       with:
@@ -40,36 +40,52 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
-    # ONLY execute the release job if the workflow run itself was triggered by a tag
     if: startsWith(github.ref, 'refs/tags/')
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Download all artifacts
+    - name: Create release directory structure
+      run: |
+        mkdir -p ${{ github.workspace }}/incoming
+        mkdir -p ${{ github.workspace }}/release-files
+
+    # Download each artifact explicitly into its own deliberate folder to avoid v4 flattening bugs
+    - name: Download Linux Artifact
       uses: actions/download-artifact@v4
       with:
-        # Download everything into a root workspace directory
-        path: ${{ github.workspace }}/downloaded-artifacts
+        name: clump-ubuntu-latest
+        path: ${{ github.workspace }}/incoming/ubuntu
+
+    - name: Download macOS Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: clump-macos-latest
+        path: ${{ github.workspace }}/incoming/macos
+
+    - name: Download Windows Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: clump-windows-latest
+        path: ${{ github.workspace }}/incoming/windows
 
     - name: Package artifacts for release
       run: |
-        mkdir -p ${{ github.workspace }}/release-files
-        cd ${{ github.workspace }}/downloaded-artifacts
+        cd ${{ github.workspace }}/incoming
         
         # Package Linux binary
-        if [ -d "clump-ubuntu-latest" ]; then
-          tar -czf ${{ github.workspace }}/release-files/clump-linux.tar.gz -C clump-ubuntu-latest clump
+        if [ -f "ubuntu/clump" ]; then
+          tar -czf ${{ github.workspace }}/release-files/clump-linux.tar.gz -C ubuntu clump
         fi
         
         # Package macOS binary
-        if [ -d "clump-macos-latest" ]; then
-          tar -czf ${{ github.workspace }}/release-files/clump-macos.tar.gz -C clump-macos-latest clump
+        if [ -f "macos/clump" ]; then
+          tar -czf ${{ github.workspace }}/release-files/clump-macos.tar.gz -C macos clump
         fi
         
         # Package Windows binary
-        if [ -d "clump-windows-latest" ]; then
-          zip -j ${{ github.workspace }}/release-files/clump-windows.zip clump-windows-latest/clump.exe
+        if [ -f "windows/clump.exe" ]; then
+          zip -j ${{ github.workspace }}/release-files/clump-windows.zip windows/clump.exe
         fi
         
         # Generate checksums
