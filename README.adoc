@@ -8,8 +8,6 @@
 Concatenate text files from your project into a single output - perfect
 for sharing codebases with LLMs, code reviews, or archival.
 
-toc::[]
-
 == Overview
 
 **clump** walks through your directories, filters out binary files and
@@ -225,13 +223,17 @@ For persistent clipboard history, install `clipvault`, `cliphist`, or similar.
 * `0` - Success
 * `1` - Error (invalid args, file not found, etc.)
 
-[WARNING]
+'''
+
+[DISCLAIMER]
 ====
 ⚠️ **Disclaimer**: clump is an early version. You may encounter bugs or
 unexpected behavior. Please report any issues on GitHub, and include a
 description of what happened, your command, and (if possible) a minimal
 reproduction example.
 ====
+
+'''
 
 == License
 
