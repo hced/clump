@@ -1,8 +1,7 @@
 # Cargo.toml
-
 [package]
 name = "clump"
-version = "1.0.1"
+version = "1.0.2"
 edition = "2024"
 description = "CLI for concatenating text file contents into a single output"
 license = "MIT"

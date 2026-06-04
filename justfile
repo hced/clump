@@ -4,7 +4,7 @@
 name := `grep -m1 '^name = ' Cargo.toml | cut -d'"' -f2`
 
 # Show this help message
-default:
+_default:
     @if [ -z "{{ name }}" ]; then echo "Error: Could not extract 'name' from Cargo.toml" && exit 1; fi
     @just --list
 
@@ -131,7 +131,7 @@ config-show:
 # Show current package version
 version:
     @if [ -z "{{ name }}" ]; then echo "Error: Could not extract 'name' from Cargo.toml" && exit 1; fi
-    @cargo pkgid | cut -d'@' -f2
+    @grep -m1 '^version = ' Cargo.toml | cut -d'"' -f2
 
 # Show binary info (size, location)
 info:
@@ -143,6 +143,109 @@ info:
     @ls -lh "$PWD/target/debug/{{ name }}" 2>/dev/null || echo "  Debug version not built (run 'just build-debug')"
     @echo ""
     @echo "Installed executable:"
-    @which {{ name }} 2>/dev/null | xargs -I {} sh -c 'if [ -L "{}" ]; then echo "  Symlink: {}"; echo "  Physical binary: $(readlink {})"; else echo "  File: {}"; fi' || echo "  Not installed (run 'just install')"
+    @which {{ name }} 2>/dev/null | xargs -I {} sh -c 'if [ -L "{}" ]; then echo "  Symlink (in PATH): {}"; echo "  Physical binary: $(readlink {})"; else echo "  File: {}"; fi' || echo "  Not installed (run 'just install')"
     @echo ""
     @echo "Project root: $PWD"
+
+# -----------------------------------------------------------------------------
+# Git commands
+# -----------------------------------------------------------------------------
+
+set shell := ["bash", "-c"]
+
+# Internal helper to ensure cargo-bump is installed
+_ensure-cargo-bump:
+    @if ! command -v cargo-bump &> /dev/null; then \
+        echo "📥 cargo-bump not found. Installing it now..."; \
+        cargo install cargo-bump; \
+    fi
+
+# Bump patch version (1.0.0 -> 1.0.1)
+bump-patch: _ensure-cargo-bump
+    @cargo bump patch
+    @echo "✅ Bumped patch version"
+
+# Bump minor version (1.0.0 -> 1.1.0)
+bump-minor: _ensure-cargo-bump
+    @cargo bump minor
+    @echo "✅ Bumped minor version"
+
+# Bump major version (1.0.0 -> 2.0.0)
+bump-major: _ensure-cargo-bump
+    @cargo bump major
+    @echo "✅ Bumped major version"
+
+# Add all changes and open editor for commit message
+git-commit:
+    @git add .
+    @echo "Opening editor for commit message..."
+    @git commit && echo "✅ Commit successful" || (echo "❌ Commit aborted (no message or user cancelled)"; exit 1)
+
+# Create and push a release tag
+push-release-tag:
+    @echo "Existing tags:"
+    @git tag --sort=-v:refname | head -5 || echo "  (none)"
+    @echo ""
+    @echo "Current version in Cargo.toml: v$(grep -m1 '^version = ' Cargo.toml | cut -d'"' -f2)"
+    @echo ""
+    @read -p "Tag name (e.g., v1.0.0): " tag; \
+    if [ -z "$tag" ]; then echo "Cancelled."; exit 0; fi
+    @echo ""
+    @read -p "Create and push tag $tag? (y/N): " confirm; \
+    if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then \
+        git tag "$tag" && git push origin "$tag" && echo "✅ Tag $tag pushed!"; \
+    else \
+        echo "Cancelled."; \
+    fi
+
+# Master release recipe: bump version, commit, tag, and push
+release: _ensure-cargo-bump
+    @echo "🚀 Starting release process..."
+    @echo ""
+    @CURRENT_VER=$(grep -m1 "^version = " Cargo.toml | cut -d"\"" -f2)
+    @echo "Current version: $CURRENT_VER"
+    @echo ""
+    @echo "Select bump type:"
+    @echo "  1) Patch (1.0.0 -> 1.0.1)"
+    @echo "  2) Minor (1.0.0 -> 1.1.0)"
+    @echo "  3) Major (1.0.0 -> 2.0.0)"
+    @echo "  4) Custom (enter manually)"
+    @echo "  q) Cancel"
+    @echo ""
+    @read -p "Choice: " choice; \
+    case $choice in \
+        1) cargo bump patch ;; \
+        2) cargo bump minor ;; \
+        3) cargo bump major ;; \
+        4) read -p "Enter new version: " version; \
+           sed -i "s/^version = \".*\"/version = \"$version\"/" Cargo.toml; \
+           echo "✅ Version updated to $version" ;; \
+        q) echo "Cancelled."; exit 0 ;; \
+        *) echo "Invalid choice. Cancelled."; exit 1 ;; \
+    esac
+    @NEW_VERSION=$(grep -m1 "^version = " Cargo.toml | cut -d"\"" -f2)
+    @TAG="v$NEW_VERSION"
+    @echo ""
+    @echo "✅ Version bumped to $NEW_VERSION (tag: $TAG)"
+    @echo ""
+    @read -p "Add all changes and commit? (y/N): " commit_confirm; \
+    if [ "$commit_confirm" != "y" ] && [ "$commit_confirm" != "Y" ]; then \
+        echo "Cancelled."; \
+        exit 0; \
+    fi
+    @git add .
+    @echo "Opening editor for commit message..."
+    @if ! git commit; then \
+        echo "❌ Commit cancelled. Release aborted."; \
+        exit 1; \
+    fi
+    @echo ""
+    @read -p "Create and push tag $TAG? (y/N): " tag_confirm; \
+    if [ "$tag_confirm" = "y" ] || [ "$tag_confirm" = "Y" ]; then \
+        git tag "$TAG" && git push origin "$TAG"; \
+        echo ""; \
+        echo "✅ Tag $TAG pushed!"; \
+        echo "🚀 Release complete!"; \
+    else \
+        echo "Commit made but tag not pushed."; \
+    fi
