@@ -1,0 +1,238 @@
+= clump
+:author: H. Cederblad
+:email: hced@users.noreply.github.com
+:toc: macro
+:toc-title: Contents
+:source-highlighter: rouge
+
+Concatenate text files from your project into a single output - perfect
+for sharing codebases with LLMs, code reviews, or archival.
+
+toc::[]
+
+== Overview
+
+**clump** walks through your directories, filters out binary files and
+common noise (like `node_modules` or `.git`), and combines all text files
+into one clean output. Built for developers who need to feed entire
+codebases to language models, share context with teammates, or archive
+project snapshots.
+
+== Quick Examples
+
+[source,bash]
+----
+# Interactive TUI (default)
+clump
+
+# Current directory, CLI mode
+clump .
+
+# Specific files
+clump src/main.rs README.md
+
+# With line numbers, save to file
+clump . --ln -o output.txt
+
+# Only Rust files
+clump . --only .rs,.toml
+
+# Exclude common directories
+clump . --exclude-dir target,.git
+----
+
+== Installation
+
+[source,bash]
+----
+git clone https://github.com/hced/clump
+cd clump
+cargo build --release
+sudo cp target/release/clump /usr/local/bin/
+----
+
+Or install to Cargo's bin directory:
+
+[source,bash]
+----
+cargo install --path .
+----
+
+Requirements: Rust 1.85+ (2024 edition)
+
+== CLI Usage
+
+=== Basic Options
+
+[source,bash]
+----
+clump [PATHS]... [OPTIONS]
+----
+
+Common flags:
+
+* `-o, --output <FILE>` - Save to file
+* `--ln, -n` - Add line numbers to output
+* `--only <EXTS>` - Only include these extensions (e.g., `.rs,.toml`)
+* `-e, --exclude <PATTERNS>` - Exclude files matching patterns
+* `--exclude-dir <DIRS>` - Exclude directories
+* `--exclude-ext <EXTS>` - Exclude file extensions
+* `-L, --level <DEPTH>` - Maximum directory depth
+* `--shallow` - Current directory only (no recursion)
+* `--nocopy` - Disable clipboard copy (enabled by default)
+
+Examples:
+
+[source,bash]
+----
+# Smart extension detection
+clump .go .toml
+
+# Exclude patterns
+clump . -e "*.log" --exclude-dir node_modules,.git
+
+# Header styles
+clump . --header-style absolute    # full paths
+clump . --header-style none        # no headers
+
+# Separator lines
+clump . --separator
+
+# With line numbers (padded: 001, 002)
+clump . --ln
+
+# Unpadded line numbers (1, 2, 3)
+clump . --ln --nopadding
+----
+
+== Recipes
+
+Save commonly used commands as **recipes**:
+
+[source,bash]
+----
+clump recipe list                 # List all recipes
+clump recipe run "Rust Project"   # Run a recipe
+clump recipe add "My Project"     # Create new recipe
+clump recipe delete "Old Recipe"  # Delete a recipe
+----
+
+Built-in recipes:
+
+* **Rust Project** - `.rs,.toml` (excludes `target/`)
+* **Go Project** - `.go,.mod,.sum` (excludes `vendor/`)
+* **Godot 4.6.3** - `.gd,.tscn,.tres,.godot,.gdshader`
+* **Unity 6.3** - `.cs,.shader,.cginc,.hlsl,.compute,.uss,.uxml,.asset`
+* **Unreal Engine 5** - `.h,.cpp,.uproject,.ini,.cs,.usf,.ush`
+* **Shallow Snippet** - Current directory only
+
+== TUI Interface
+
+Run `clump` without arguments to open the interactive terminal UI.
+
+**Main Menu:**
+
+* `📁 Select` - Browse and select files with fuzzy search
+* `📚 Recipes` - Manage saved recipes
+* `⚙️ Configuration` - Edit persistent settings
+* `❓ Help` - View help
+
+**File Picker:**
+
+* `↑↓/jk` - Navigate
+* `←h/→l` - Change directory
+* `Space` - Toggle selection
+* `Tab/f` - Fuzzy search mode
+* `.` - Toggle hidden files
+* `Enter` - Confirm
+
+**Recipes Manager:**
+
+* `↑↓/jk` - Navigate
+* `r` - Run recipe
+* `e` - Edit recipe
+* `a` - Add recipe
+* `d` - Delete recipe
+* `f/Tab` - Fuzzy search
+
+== Configuration
+
+Location: `~/.config/clump/config.ron`
+
+[source,rust]
+----
+(
+    sorting: files_first,      // files_first, dirs_first, or flat
+    files: (
+        include_hidden: false,
+        exclude_dirs: ["node_modules", ".git"],
+    ),
+    output: (
+        header_style: "relative",
+        separators: true,
+        separator_char: "-",
+    ),
+)
+----
+
+== Exclusion Patterns
+
+clump supports glob patterns for flexible exclusions:
+
+[source,bash]
+----
+# Exact name
+-e node_modules
+
+# Wildcards
+-e "*.log"
+
+# Path patterns
+--exclude-dir "**/vendor"
+
+# Specific path
+--exclude-dir src/vendor
+
+# Literal (disable glob)
+-e "literal:weird*file.txt"
+----
+
+== Line Numbering
+
+[source,bash]
+----
+clump . --ln                     # Padded: 001 │ content
+clump . --ln --nopadding         # Unpadded: 1 │ content
+----
+
+The padding width adjusts to the total line count (e.g., 001-999 for 999 lines).
+
+== Clipboard Support
+
+* **Linux/Wayland**: Install `wl-clipboard` (`sudo pacman -S wl-clipboard`)
+* **Linux/X11, macOS, Windows**: Works natively
+
+For persistent clipboard history, install `clipvault`, `cliphist`, or similar.
+
+=== Platform Notes
+
+* Output is always printed to stdout
+* Clipboard copy is **enabled by default** (use `--nocopy` to disable)
+* Binary files are automatically skipped
+
+=== Exit Codes
+
+* `0` - Success
+* `1` - Error (invalid args, file not found, etc.)
+
+[WARNING]
+====
+⚠️ **Disclaimer**: clump is an early version. You may encounter bugs or
+unexpected behavior. Please report any issues on GitHub, and include a
+description of what happened, your command, and (if possible) a minimal
+reproduction example.
+====
+
+== License
+
+MIT License - see link:LICENSE[] file for details.

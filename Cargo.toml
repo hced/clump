@@ -1,0 +1,44 @@
+# Cargo.toml
+
+[package]
+name = "clump"
+version = "1.0.1"
+edition = "2024"
+description = "CLI for concatenating text file contents into a single output"
+license = "MIT"
+authors = ["H. Cederblad <hced@users.noreply.github.com>"]
+
+[dependencies]
+# CLI argument parsing
+clap = { version = "4", features = ["derive", "wrap_help"] }
+# Config directory detection
+dirs = "6"
+# Recursive directory walking
+walkdir = "2"
+# Glob pattern matching for exclusions
+glob = "0.3"
+# Fuzzy matching engine
+nucleo = "0.5"
+# Error handling
+anyhow = "1"
+# Serialization for config/recipes (RON format)
+serde = { version = "1", features = ["derive"] }
+ron = "0.8"
+# ASCII banner generation
+incredimo = "0.1"
+# Terminal UI framework
+ratatui = "0.29"
+# Terminal event handling
+crossterm = "0.28"
+# Cross-platform clipboard access
+arboard = "3.4"
+# Time for timestamp generation
+chrono = "0.4"
+
+[features]
+default = ["tui"]
+tui = []
+
+[[bin]]
+name = "clump"
+path = "src/main.rs"
