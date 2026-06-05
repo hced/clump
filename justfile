@@ -268,7 +268,7 @@ release: _ensure-cargo-bump
         sed -i "s/^version = \".*\"/version = \"$NEW_VERSION\"/" Cargo.toml; \
         echo "✅ Cargo.toml updated to $NEW_VERSION"; \
     fi; \
-    git add Cargo.toml; \
+    git add Cargo.toml Cargo.lock; \
     echo "Opening editor for commit message..."; \
     if ! git commit; then \
         echo "❌ Commit cancelled. Reverting Cargo.toml..."; \
