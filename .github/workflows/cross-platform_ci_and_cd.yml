@@ -59,7 +59,7 @@ jobs:
 
       # Download each artifact explicitly into its own deliberate folder to avoid v4 flattening bugs
       - name: Download Linux Artifact
-         uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v4
         with:
           name: clump-ubuntu-latest
           path: ${{ github.workspace }}/incoming/ubuntu
