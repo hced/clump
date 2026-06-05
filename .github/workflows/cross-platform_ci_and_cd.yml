@@ -1,12 +1,15 @@
 name: Cross-Platform CI/CD
 
+# -----------------------------------------------------------------------------
+# RUNNER TRIGGER LOGIC:
+# This workflow is explicitly configured to ONLY trigger on tag pushes (e.g., v1.0.6).
+# Standard pushes to the 'main' branch or pull requests will NOT wake up the runners,
+# ensuring we don't waste CI compilation minutes on routine development tasks.
+# -----------------------------------------------------------------------------
 on:
   push:
-    branches: ["main"]
     tags:
-      - "v*"
-  pull_request:
-    branches: ["main"]
+      - "v*" # <-- This specific rule restricts execution to version tags only
 
 env:
   CARGO_TERM_COLOR: always
@@ -56,7 +59,7 @@ jobs:
 
       # Download each artifact explicitly into its own deliberate folder to avoid v4 flattening bugs
       - name: Download Linux Artifact
-        uses: actions/download-artifact@v4
+         uses: actions/download-artifact@v4
         with:
           name: clump-ubuntu-latest
           path: ${{ github.workspace }}/incoming/ubuntu
