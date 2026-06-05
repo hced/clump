@@ -1,7 +1,7 @@
 # Cargo.toml
 [package]
 name = "clump"
-version = "1.0.10"
+version = "1.0.11"
 edition = "2024"
 description = "CLI for combining multiple text files into a single text output"
 license = "MIT"
