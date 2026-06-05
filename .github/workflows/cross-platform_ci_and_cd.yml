@@ -13,6 +13,8 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  # Force all JavaScript actions to use Node 24 immediately to silence deprecation warnings
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 # Need to grant write permissions for the Release step to move compiled binaries into Release
 permissions:
@@ -22,8 +24,8 @@ jobs:
   build:
     strategy:
       matrix:
-        # Explicitly pinning windows-2025 to clear the upcoming environment migration notice
-        os: [ubuntu-latest, windows-2025, macos-latest]
+        # Use windows-latest to allow GitHub's internal redirection to handle the label update
+        os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -74,7 +76,7 @@ jobs:
       - name: Download Windows Artifact
         uses: actions/download-artifact@v6
         with:
-          name: clump-windows-2025
+          name: clump-windows-latest
           path: ${{ github.workspace }}/incoming/windows
 
       - name: Package artifacts for release
