@@ -22,7 +22,8 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        # Explicitly pinning windows-2025 to clear the upcoming environment migration notice
+        os: [ubuntu-latest, windows-2025, macos-latest]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -73,7 +74,7 @@ jobs:
       - name: Download Windows Artifact
         uses: actions/download-artifact@v6
         with:
-          name: clump-windows-latest
+          name: clump-windows-2025
           path: ${{ github.workspace }}/incoming/windows
 
       - name: Package artifacts for release
@@ -100,7 +101,7 @@ jobs:
           sha256sum * > checksums.txt
 
       - name: Create Release and upload assets
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: ${{ github.workspace }}/release-files/*
           generate_release_notes: true
