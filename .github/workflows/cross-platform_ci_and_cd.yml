@@ -39,7 +39,7 @@ jobs:
 
       # Explicitly naming artifacts distinctly per-OS
       - name: Upload binary artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v8 # Upgraded to v8
         with:
           name: clump-${{ matrix.os }}
           path: |
@@ -62,19 +62,19 @@ jobs:
 
       # Download each artifact explicitly into its own deliberate folder to avoid v4 flattening bugs
       - name: Download Linux Artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8 # Upgraded to v8
         with:
           name: clump-ubuntu-latest
           path: ${{ github.workspace }}/incoming/ubuntu
 
       - name: Download macOS Artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8 # Upgraded to v8
         with:
           name: clump-macos-latest
           path: ${{ github.workspace }}/incoming/macos
 
       - name: Download Windows Artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8 # Upgraded to v8
         with:
           name: clump-windows-latest
           path: ${{ github.workspace }}/incoming/windows
