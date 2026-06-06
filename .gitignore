@@ -1,2 +1,24 @@
+# Typical project-based cruft
 /target
 ISSUES.md
+*.orig
+
+# Backup directory
+.bkp/
+
+# Rust build artifacts
+/target/
+
+# IDE cruft
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
