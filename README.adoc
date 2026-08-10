@@ -122,6 +122,8 @@ Built-in recipes:
 * **Godot 4.6.3** - `.gd,.tscn,.tres,.godot,.gdshader`
 * **Unity 6.3** - `.cs,.shader,.cginc,.hlsl,.compute,.uss,.uxml,.asset`
 * **Unreal Engine 5** - `.h,.cpp,.uproject,.ini,.cs,.usf,.ush`
+* **Blender Extension/Add-on** - `.py,.pyi,.toml,.md,.txt,.rst,.json,.yaml,.yml` (excludes `__pycache__/`, `.git/`, `.bkp/`, build output)
+* **Python Project** - `.py,.pyi,.toml,.cfg,.ini,.md,.txt,.rst,.yaml,.yml,.json` (excludes `__pycache__/`, virtualenvs, caches, build output)
 * **Shallow Snippet** - Current directory only
 
 == TUI Interface

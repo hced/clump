@@ -103,6 +103,16 @@ fn default_recipes() -> Vec<Recipe> {
             command: ". -e Intermediate -e Binaries -e Saved -e DerivedDataCache -e .git --only .h,.cpp,.uproject,.ini,.cs,.usf,.ush".into(),
         },
         Recipe {
+            name: "Blender Extension/Add-on".into(),
+            description: "Common Blender extension/add-on source files".into(),
+            command: ". --exclude-dir __pycache__ --exclude-dir .git --exclude-dir .bkp --exclude-dir .thumbnails --exclude-dir build --exclude-dir dist --exclude-dir \"*.egg-info\" --only .py,.pyi,.toml,.md,.txt,.rst,.json,.yaml,.yml".into(),
+        },
+        Recipe {
+            name: "Python Project".into(),
+            description: "Common Python project source files".into(),
+            command: ". --exclude-dir __pycache__ --exclude-dir .git --exclude-dir .bkp --exclude-dir .venv --exclude-dir venv --exclude-dir .mypy_cache --exclude-dir .pytest_cache --exclude-dir .ruff_cache --exclude-dir .tox --exclude-dir .nox --exclude-dir htmlcov --exclude-dir build --exclude-dir dist --exclude-dir node_modules --exclude-dir \"*.egg-info\" --only .py,.pyi,.toml,.cfg,.ini,.md,.txt,.rst,.yaml,.yml,.json".into(),
+        },
+        Recipe {
             name: "Shallow Snippet".into(),
             description: "Current dir only, no recursion".into(),
             command: ". --shallow".into(),
